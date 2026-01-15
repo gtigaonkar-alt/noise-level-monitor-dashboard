@@ -1,20 +1,52 @@
-<!DOCTYPE html><html><head><title>Noise Control</title>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<style>body{font-family:Arial;text-align:center;} .slider{width:300px;}</style>
-</head><body>
-<h1>Noise Dashboard</h1>
-<p>Live Noise: <span id=live>0</span></p>
-<p>Threshold: <span id=thresh>1000</span></p>
-<input type=range class=slider min=0 max=4095 value=1000 id=slider><br>
-<script>
-const config={databaseURL:"PASTE_DATABASE_URL"};
-firebase.initializeApp(config);
-const db=firebase.database().ref('noise');
-db.child('current').on('value',s=>document.getElementById('live').innerText=s.val());
-db.child('threshold').on('value',s=>{
-  document.getElementById('thresh').innerText=s.val();
-  document.getElementById('slider').value=s.val();
-});
-document.getElementById('slider').oninput=e=>db.child('threshold').set(parseInt(e.target.value));
-</script></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Noise Monitor</title>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; margin-top: 40px; }
+    .slider { width: 300px; }
+  </style>
+</head>
+<body>
+  <h1>Noise Monitor</h1>
+  <p>Live noise: <span id="noise">0</span></p>
+  <p>Threshold: <span id="thresh">1000</span></p>
+  <input type="range" id="slider" class="slider" min="0" max="4095" value="1000">
+  <script>
+    // 1) your config
+    const firebaseConfig = {
+      databaseURL: "YOUR_DATABASE_URL"   // paste same as ESP32
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const noiseSpan = document.getElementById('noise');
+    const threshSpan = document.getElementById('thresh');
+    const slider = document.getElementById('slider');
+
+    // 2) listen for noise updates
+    db.ref('noise/current').on('value', snap => {
+      if (snap.exists()) noiseSpan.textContent = snap.val();
+    });
+
+    // 3) listen for threshold updates
+    db.ref('noise/threshold').on('value', snap => {
+      if (snap.exists()) {
+        const v = snap.val();
+        threshSpan.textContent = v;
+        slider.value = v;
+      }
+    });
+
+    // 4) when user moves slider, write new threshold
+    slider.oninput = e => {
+      const v = parseInt(e.target.value);
+      threshSpan.textContent = v;
+      db.ref('noise/threshold').set(v);
+    };
+  </script>
+</body>
+</html>
